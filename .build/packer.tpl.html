@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="third-party-notices" content="内嵌 MP3 编码器 lamejs 1.2.1（LGPL-3.0，作者 Alex Zhukov，源码 https://github.com/zhuker/lamejs）；完整声明见仓库 THIRD-PARTY-NOTICES.md">
+<title>重生短剧按键挂件 · 音频合成器 {{VER}}</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F2F7FD;background-image:radial-gradient(80% 40% at 50% 0,#FFFFFF,rgba(255,255,255,0) 70%);color:#22345C;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:14px;line-height:1.6}
+.wrap{max-width:820px;margin:0 auto;padding:22px 16px 70px}
+h1{font-size:21px;font-weight:900;margin:0 0 4px;color:#2F6BE0;letter-spacing:.5px}
+.ver{display:inline-block;font-size:12px;font-weight:800;color:#fff;background:linear-gradient(160deg,#69B0F2,#2F6BE0);border-radius:999px;padding:2px 10px;vertical-align:middle;margin-left:8px;letter-spacing:0}
+.sub{color:#6B7FA8;margin:0 0 18px}
+.sec{background:#FFFFFF;border:1px solid #DFE9F6;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 6px 18px rgba(80,110,160,.08)}
+h2{font-size:13px;font-weight:800;color:#3E63A8;margin:0 0 12px;letter-spacing:.5px}
+h2 b{display:inline-block;min-width:20px;height:20px;line-height:20px;text-align:center;border-radius:6px;background:#E8F1FE;color:#2F6BE0;margin-right:8px;font-size:12px}
+.fixed{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:#6B7FA8}
+.fixed img{width:132px;height:72px;object-fit:contain;border-radius:9px;border:1px solid #DFE9F6;background:#fff}
+.libhead{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.drop{position:relative;display:flex;align-items:center;justify-content:center;height:104px;border:2px dashed #B9CEE8;border-radius:14px;padding:12px 16px;text-align:center;color:#6B7FA8;cursor:pointer;background:#F8FBFF;transition:background .15s,border-color .15s;overflow:hidden}
+.drop.hot{border-color:#2F6BE0;background:#EEF5FF}
+.drop.busy{cursor:progress;opacity:.7}
+.drop strong{color:#2F6BE0}
+.drop input{position:absolute;left:-9999px}
+.stat{min-height:19px;margin:10px 0 0;font-size:12px;font-weight:800;color:#2F6BE0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px;align-items:end}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#3E63A8;background:#F0F7FF;border:1px solid #D6E8FC;border-radius:10px;padding:9px 12px;cursor:pointer;height:38px}
+.lrow .lratio{font-size:11px;font-weight:800;color:#2C7A44}
+.edwrap{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;background:#F0F5FC;border:1px solid #DFE9F6;line-height:0;touch-action:none;user-select:none;-webkit-user-select:none}
+.edwrap img{display:block;width:100%;height:auto;pointer-events:none}
+#edPins{position:absolute;left:0;top:0;width:100%;height:100%}
+.epin{position:absolute;height:0;box-sizing:border-box;border-radius:50%;border:2px solid rgba(47,107,224,.9);
+background:rgba(47,107,224,.18);transform:translate(-50%,-50%);cursor:grab;touch-action:none}
+.epin.sel{border-color:#E8506F;background:rgba(232,80,111,.22);box-shadow:0 0 0 2px rgba(232,80,111,.35);cursor:grabbing}
+.epin b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:900;color:#2F6BE0;pointer-events:none}
+.epin.sel b{color:#C0395E}
+.rng{width:100%}
+.lrow{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:10px;background:#F7FAFE;border:1px solid #E4EEF9;margin-bottom:6px;flex-wrap:wrap}
+.lrow .lname{flex:1 1 140px;min-width:80px;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .lmeta{font-size:11px;color:#8CA0C0;min-width:110px}
+.lrow .luse{font-size:11px;font-weight:800;border-radius:999px;padding:1px 8px;background:#E8F1FE;color:#2F6BE0}
+.lrow .luse.none{background:#F2F5FA;color:#A9B7CC}
+.grp{border-radius:12px;padding:10px 12px;margin-top:10px}
+.grp.blue{background:#F0F7FF;border:1px solid #D6E8FC}
+.grp.pink{background:#FDF1F7;border:1px solid #F8DBEA}
+.grp h3{font-size:12px;margin:0 0 6px;font-weight:800}
+.grp.blue h3{color:#2F6BE0}
+.grp.pink h3{color:#D9578F}
+.row{display:flex;align-items:center;gap:7px;padding:5px 0;flex-wrap:wrap}
+.num{width:20px;height:20px;border-radius:50%;background:#E8F1FE;color:#2F6BE0;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.grp.pink .num{background:#FCE3EF;color:#D9578F}
+.sel{flex:1 1 130px;min-width:100px;background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:6px 8px;font-size:12px;font-family:inherit;color:#22345C}
+.lbl{flex:0 1 100px;min-width:80px;background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:6px 9px;font-size:12px;font-family:inherit;color:#22345C}
+.pick{position:relative;overflow:hidden;display:inline-flex;align-items:center;background:#2F6BE0;border:0;color:#fff;font-weight:800;padding:9px 16px;border-radius:10px;cursor:pointer;font-size:13px;box-shadow:0 5px 14px rgba(47,107,224,.28)}
+.pick input{position:absolute;left:-9999px}
+.pick .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{background:#fff;border:1px solid #CBD9EC;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;color:#3E63A8}
+.mini:hover{background:#F0F7FF}
+.mini.del{color:#C0395E;border-color:#F3C6D4}
+.mini.del:hover{background:#FFF1F5}
+.sz{font-size:11px;color:#8CA0C0;min-width:58px;text-align:right}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#6B7FA8;font-weight:700}
+.fld input{background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;color:#22345C;font-weight:400}
+.bar{height:10px;border-radius:6px;background:#E8F1FE;overflow:hidden;margin:10px 0 8px}
+.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#69B0F2,#2F6BE0);transition:width .2s}
+.bar.over span{background:linear-gradient(90deg,#FF9CB4,#E8506F)}
+.size{font-size:13px;color:#22345C}
+.size b{color:#2F6BE0}
+.size b.bad{color:#D33A5E}
+.warn{margin-top:10px;background:#FFF1F4;border:1px solid #FFC2D2;color:#A8305A;border-radius:10px;padding:10px 12px;font-size:12px}
+.ok{margin-top:10px;background:#F1FBF3;border:1px solid #BEE7C8;color:#2C7A44;border-radius:10px;padding:10px 12px;font-size:12px}
+.hint{font-size:11px;color:#8CA0C0;margin:8px 0 0}
+.acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{background:linear-gradient(160deg,#69B0F2,#2F6BE0);border:0;color:#fff;font-weight:800;border-radius:11px;padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 16px rgba(47,107,224,.3)}
+.btn.ghost{background:#fff;border:2px solid #D6E8FC;color:#2F6BE0;box-shadow:none;font-weight:700}
+.steps{margin:0;padding-left:20px;color:#4A5F8A;font-size:13px}
+.steps b{color:#22345C}
+#err{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:99;background:#FFF1F4;border:1px solid #FF8FB0;border-radius:10px;padding:10px 12px;font-size:12px;color:#8E2448;box-shadow:0 8px 24px rgba(160,60,100,.25)}
+#errTxt{white-space:pre-wrap;word-break:break-all;max-height:32vh;overflow:auto;user-select:text}
+#err button{margin-top:8px;background:#FF8FB0;border:0;color:#fff;font-weight:700;border-radius:7px;padding:6px 12px;font-size:12px;font-family:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>重生短剧按键挂件 · 音频合成器 <span class="ver">{{VER}}</span></h1>
+  <p class="sub">挂件图和 6 个按键的位置已经钉死在成品里了，这个工具只管三件事：选歌、本地压缩、卡住体积红线。</p>
+
+  <section class="sec">
+    <h2><b>1</b>当前挂件图（默认）</h2>
+    <div class="fixed">
+      <img id="pvBlue" alt=""> <span>男主款 · 蓝</span>
+      <img id="pvPink" alt=""> <span>女主款 · 粉</span>
+    </div>
+    <p class="hint" id="fixedInfo"></p>
+  </section>
+
+  <section class="sec">
+    <h2><b>2</b>挂件图与按键对位</h2>
+    <div class="opts">
+      <label class="fld"><span>编辑哪一款</span>
+        <select id="editSet" style="background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;color:#22345C">
+          <option value="blue">男主款（蓝）</option>
+          <option value="pink">女主款（粉）</option>
+        </select>
+      </label>
+      <div class="fld"><span>换图</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="pick" style="padding:8px 14px;font-size:12px"><input type="file" id="imgFile" accept="image/*"><span class="pname">选择图片</span></label>
+          <button type="button" class="mini" id="imgReset">用回默认图</button>
+        </div>
+      </div>
+      <label class="fld"><span>选中按键的直径 <b id="dVal" style="color:#2F6BE0">13%</b></span>
+        <input type="range" id="dRange" class="rng" min="3" max="45" step="0.5" value="13">
+      </label>
+      <label class="chk"><input type="checkbox" id="dAll" checked> 六个一起改大小</label>
+    </div>
+    <div class="edwrap" id="edwrap">
+      <img id="edImg" alt="">
+      <div id="edPins"></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="mini" id="alignReset">六个位置恢复默认</button>
+      <span class="hint" id="edInfo" style="margin:0"></span>
+    </div>
+    <p class="hint">图上的六个圈可以直接<b>拖动</b>到挂件的圆环上（鼠标和手指都行）；选中某个圈后拖上面的滑杆改直径。取消勾选「六个一起改大小」就能单独调某一个。</p>
+    <p class="hint">支持 <b>GIF / 动图 WebP</b> 等会动的图（成品里会原样内嵌，不重新编码，所以动画保留）。<b>不换图、不动坐标，就和默认完全一样</b>；换了图记得重新对位。</p>
+    <p class="hint">成品页面底色是<b>纯黑</b>，图片保持原样显示。想要挂件"悬空"的效果，就换成<b>透明底</b>的 PNG / WebP / GIF。</p>
+  </section>
+
+  <section class="sec">
+    <h2><b>3</b>歌曲库（可批量拖拽）</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="addSongs" accept="audio/*" multiple>
+      <div id="dropTxt"></div>
+    </label>
+    <div class="opts">
+      <label class="chk"><input type="checkbox" id="cmpOn" checked> 添加时自动压缩</label>
+      <label class="fld"><span>目标码率</span>
+        <select id="kbps" style="background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;color:#22345C">
+          <option value="32">32 kbps（最小）</option>
+          <option value="48">48 kbps</option>
+          <option value="64" selected>64 kbps（推荐，约 5:1）</option>
+          <option value="96">96 kbps（音乐留细节）</option>
+          <option value="128">128 kbps</option>
+          <option value="192">192 kbps</option>
+        </select>
+      </label>
+      <label class="fld"><span>声道</span>
+        <select id="ch" style="background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;color:#22345C">
+          <option value="1" selected>单声道（体积减半，人声足够）</option>
+          <option value="2">保持立体声</option>
+        </select>
+      </label>
+      <label class="fld"><span>采样率</span>
+        <select id="rate" style="background:#fff;border:1px solid #CBD9EC;border-radius:9px;padding:7px 10px;font-size:13px;font-family:inherit;color:#22345C">
+          <option value="0" selected>保持原样</option>
+          <option value="32000">降到 32 kHz</option>
+          <option value="22050">降到 22.05 kHz（更省）</option>
+        </select>
+      </label>
+    </div>
+    <div class="stat" id="stat"></div>
+    <div id="lib" style="margin-top:12px"></div>
+    <p class="hint" id="libSum"></p>
+    <p class="hint">同一首歌可以分给多个按键，<b>只会内嵌一次</b>，不额外占体积。加进来的歌会自动填到第一个空位。</p>
+    <p class="hint">压缩用内嵌的 lamejs 在本地完成（不联网、不上传）。已经够小的文件会自动跳过压缩，避免无谓的音质损失。</p>
+  </section>
+
+  <section class="sec">
+    <h2><b>4</b>按键分配</h2>
+    <div class="grp blue">
+      <h3>男主款 · 蓝 · 6 个键</h3>
+      <div id="slotsBlue"></div>
+    </div>
+    <div class="grp pink">
+      <h3>女主款 · 粉 · 6 个键</h3>
+      <div id="slotsPink"></div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="mini" id="copyBP">把男主款的分配复制到女主款</button>
+      <button type="button" class="mini" id="clearAll">清空全部分配</button>
+    </div>
+    <p class="hint">名字是按下时显示在挂件下方那行的字，选中歌后会自动填，可改。留空（不可按）的按键在成品里按不动。</p>
+  </section>
+
+  <section class="sec">
+    <h2><b>5</b>页面文字（挂件外面的）</h2>
+    <div class="grid">
+      <label class="fld"><span>顶部主标</span><input id="brand" value="重生短剧按键挂件"></label>
+      <label class="fld"><span>副标</span><input id="sub" value="AI短句BGM 一按就有梗"></label>
+      <label class="fld"><span>卖点 chip 1</span><input id="chip1" value="按键发声"></label>
+      <label class="fld"><span>卖点 chip 2</span><input id="chip2" value="热门短句"></label>
+      <label class="fld"><span>卖点 chip 3</span><input id="chip3" value="随身挂饰"></label>
+      <label class="fld"><span>底部提示</span><input id="tip" value="点一下开始循环 · 再点一下停止"></label>
+      <label class="fld"><span>成品文件名</span><input id="fname" value="重生短剧按键挂件"></label>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2><b>6</b>体积（红线 <span id="capTxt">30</span> MB）</h2>
+    <div class="bar" id="bar"><span id="barIn"></span></div>
+    <div id="sizeInfo" class="size">还没放歌曲。</div>
+    <div id="sizeWarn" class="warn" style="display:none"></div>
+    <div id="sizeOk" class="ok" style="display:none"></div>
+    <p class="hint">音频转成内嵌代码会膨胀 1.37 倍（base64 的固有代价）。压缩请用你自己的工具做好再放进来。</p>
+  </section>
+
+  <section class="sec acts">
+    <button type="button" id="mkReal" class="btn">生成成品并下载</button>
+    <button type="button" id="mkSynth" class="btn ghost">生成试玩版（不用歌曲，听合成音）</button>
+    <div id="outInfo" class="hint" style="flex:1 1 100%"></div>
+  </section>
+
+  <section class="sec">
+    <h2><b>7</b>怎么放到手机上</h2>
+    <ol class="steps">
+      <li>生成得到 <b>重生短剧按键挂件.html</b> 一个文件。</li>
+      <li>传进手机（微信文件传输助手 / QQ / 数据线 / 网盘都行）。</li>
+      <li>在手机的<b>文件管理</b>里找到它，点「打开方式」→ 选 <b>Chrome</b> 或你常用的浏览器。</li>
+      <li>打开后点挂件上的圆环出声；想常驻就浏览器菜单 →「添加到主屏幕」。</li>
+    </ol>
+    <p class="hint">两个坑：① 别用系统自带的「HTML 查看器」，它不会响；② 微信里直接点开也不行，必须先存到文件管理再打开。</p>
+  </section>
+
+  <div id="err"><div id="errTxt"></div><button id="errClose" type="button">关闭</button></div>
+</div>
+
+<script>{{LAME_JS}}</script>
+<script>
+(function(){
+'use strict';
+
+/* 以下 6 个常量由构建脚本注入，不要手改。 */
+var PLAYER_CSS = {{CSS_JS}};
+var PLAYER_BODY = {{BODY_JS}};
+var PLAYER_JS = {{JS_JS}};
+var IMG = { blue: {{IMG_BLUE}}, pink: {{IMG_PINK}} };
+var HOT = {{HOT_JS}};
+var AR = {{AR_JS}};
+var BUILD_INFO = {{BUILD_INFO}};
+var APP_VER = {{VER_JS}};
+
+var MAX_MB = 30;
+var GROUPS = ['blue', 'pink'];
+var NAME = { blue: '男主款', pink: '女主款' };
+var THEME = { blue: 'blue', pink: 'pink' };
+
+var library = [];          /* {id, name, dataUrl, bytes} */
+var assign = { blue: [-1, -1, -1, -1, -1, -1], pink: [-1, -1, -1, -1, -1, -1] };
+var nextId = 1;
+var shared = false;
+var previewAudio = null, previewId = -1, previewSeq = 0, busy = false, activeBase = '';
+var baseBytes = 0;
+
+/* ---------- 挂件图与按键对位（v2） ---------- */
+function cloneHot(h){
+  var d = h.d;
+  var da = (d && d.length) ? d.slice() : [d, d, d, d, d, d];
+  return { d: da, x: h.x.slice(), y: h.y.slice() };
+}
+var align = { blue: cloneHot(HOT.blue), pink: cloneHot(HOT.pink) };
+var customImg = { blue: null, pink: null };
+var customAr = { blue: null, pink: null };
+var editSet = 'blue';
+var selPin = 0;
+
+function curImg(k){ return customImg[k] || IMG[k]; }
+function refreshPreviews(){
+  $('pvBlue').src = curImg('blue');
+  $('pvPink').src = curImg('pink');
+}
+function edInfo(){
+  var a = align[editSet];
+  $('edInfo').textContent = '第 ' + (selPin + 1) + ' 键：x ' + a.x[selPin].toFixed(1)
+    + '% / y ' + a.y[selPin].toFixed(1) + '% / 直径 ' + a.d[selPin] + '%'
+    + (customImg[editSet] ? '（你自己换的图）' : '（默认图）');
+  $('dVal').textContent = a.d[selPin] + '%';
+}
+function renderEditor(){
+  $('edImg').src = curImg(editSet);
+  var host = $('edPins');
+  host.innerHTML = '';
+  var a = align[editSet];
+  for (var i = 0; i < 6; i++) {
+    var p = document.createElement('div');
+    p.className = 'epin' + (i === selPin ? ' sel' : '');
+    p.style.left = a.x[i] + '%';
+    p.style.top = a.y[i] + '%';
+    p.style.width = a.d[i] + '%';
+    p.style.paddingBottom = a.d[i] + '%';
+    p.setAttribute('data-i', String(i));
+    var b = document.createElement('b');
+    b.textContent = String(i + 1);
+    p.appendChild(b);
+    host.appendChild(p);
+  }
+  $('dRange').value = a.d[selPin];
+  edInfo();
+}
+function bindEditor(){
+  var wrap = $('edwrap'), host = $('edPins');
+  var drag = -1;
+  function pct(e){
+    var r = wrap.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / (r.width || 1) * 100, y: (e.clientY - r.top) / (r.height || 1) * 100 };
+  }
+  function clamp(v){ return v < 0 ? 0 : (v > 100 ? 100 : v); }
+  host.addEventListener('pointerdown', function(e){
+    var t = e.target;
+    while (t && t !== host && String(t.className || '').indexOf('epin') < 0) { t = t.parentNode; }
+    if (!t || t === host) { return; }
+    var i = parseInt(t.getAttribute('data-i'), 10);
+    if (isNaN(i)) { return; }
+    if (i !== selPin) { selPin = i; renderEditor(); }
+    drag = i;
+    try { host.children[i].setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
+  });
+  wrap.addEventListener('pointermove', function(e){
+    if (drag < 0) { return; }
+    var p = pct(e), a = align[editSet];
+    a.x[drag] = clamp(p.x);
+    a.y[drag] = clamp(p.y);
+    var el = host.children[drag];
+    if (el) { el.style.left = a.x[drag] + '%'; el.style.top = a.y[drag] + '%'; }
+    edInfo();
+    e.preventDefault();
+  });
+  function stopDrag(){ drag = -1; }
+  wrap.addEventListener('pointerup', stopDrag);
+  wrap.addEventListener('pointercancel', stopDrag);
+  $('dRange').addEventListener('input', function(){
+    var v = parseFloat(this.value) || 13;
+    var a = align[editSet];
+    if ($('dAll').checked) { for (var i = 0; i < 6; i++) { a.d[i] = v; } }
+    else { a.d[selPin] = v; }
+    renderEditor();
+  });
+  $('dAll').addEventListener('change', edInfo);
+  $('editSet').addEventListener('change', function(){
+    editSet = this.value;
+    selPin = 0;
+    renderEditor();
+  });
+  $('imgFile').addEventListener('change', function(ev){
+    var f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (!f) { return; }
+    if (f.size > 2 * 1048576) {
+      showErr('这张图 ' + mb(f.size) + '，偏大，成品会明显变大。动图尤其容易大，建议先压一下。');
+    }
+    readDataUrl(f).then(function(u){
+      var which = editSet;
+      customImg[which] = u;
+      var probe = new Image();
+      probe.onload = function(){
+        if (probe.naturalWidth && probe.naturalHeight) {
+          customAr[which] = probe.naturalWidth / probe.naturalHeight;
+          updateSize();
+        }
+      };
+      probe.onerror = function(){ customAr[which] = null; };
+      probe.src = u;
+      renderEditor();
+      refreshPreviews();
+      updateSize();
+    }, function(){
+      showErr('读图片失败：' + f.name);
+    });
+  });
+  $('imgReset').onclick = function(){
+    customImg[editSet] = null;
+    customAr[editSet] = null;
+    renderEditor();
+    refreshPreviews();
+    updateSize();
+  };
+  $('alignReset').onclick = function(){
+    align[editSet] = cloneHot(HOT[editSet]);
+    renderEditor();
+  };
+}
+
+var MIME = {
+  mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', aac: 'audio/aac', mp4: 'audio/mp4',
+  ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac', webm: 'audio/webm'
+};
+var OK_EXT = ['mp3', 'wav', 'm4a', 'aac', 'mp4'];
+var WARN_EXT = ['ogg', 'oga', 'opus', 'flac', 'webm', 'aiff', 'aif', 'wma', 'amr'];
+
+var errBox = document.getElementById('err');
+var errTxt = document.getElementById('errTxt');
+function showErr(m){ errTxt.textContent = String(m); errBox.style.display = 'block'; }
+window.onerror = function(m, s, l){ showErr('脚本错误：' + m + '（第' + l + '行）'); return false; };
+document.getElementById('errClose').onclick = function(){ errBox.style.display = 'none'; };
+
+function $(id){ return document.getElementById(id); }
+function mb(n){ return (n / 1048576).toFixed(2) + ' MB'; }
+function blobSize(str){ return new Blob([str]).size; }
+function extOf(name){ var p = String(name).split('.'); return p.length > 1 ? p[p.length - 1].toLowerCase() : ''; }
+function stripExt(name){ var s = String(name), i = s.lastIndexOf('.'); return i > 0 ? s.slice(0, i) : s; }
+function fixDataUrl(dataUrl, ext){
+  var m = MIME[ext];
+  if (!m) { return dataUrl; }
+  var i = dataUrl.indexOf(',');
+  if (i < 0) { return dataUrl; }
+  return 'data:' + m + ';base64,' + dataUrl.slice(i + 1);
+}
+function safeJson(d){
+  return JSON.stringify(d)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+function esc(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function buildHtml(data){
+  var head = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
+    + '<meta name="theme-color" content="#000000">\n'
+    + '<meta name="generator" content="重生短剧按键挂件打包器 ' + APP_VER + '">\n'
+    + '<title>' + esc(data.title || '重生短剧按键挂件') + '</title>\n'
+    + '<style>\n' + PLAYER_CSS + '\n</style>\n</head>\n<body class="">\n';
+  var tail = '\n<script>window.PENDANT_DATA=' + safeJson(data) + ';<\/script>\n'
+    + '<script>\n' + PLAYER_JS + '\n<\/script>\n</body>\n</html>\n';
+  return head + PLAYER_BODY + tail;
+}
+
+/* ---------- 歌曲库 ---------- */
+
+function byId(id){
+  for (var k = 0; k < library.length; k++) { if (library[k].id === id) { return library[k]; } }
+  return null;
+}
+function bankIndex(id){
+  for (var k = 0; k < library.length; k++) { if (library[k].id === id) { return k; } }
+  return -1;
+}
+function usageOf(id){
+  var n = 0;
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { if (assign[GROUPS[g]][i] === id) { n++; } }
+  }
+  return n;
+}
+function firstEmpty(){
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { if (assign[GROUPS[g]][i] === -1) { return { g: GROUPS[g], i: i }; } }
+  }
+  return null;
+}
+/* ---------- 本地压缩（lamejs，完全离线） ---------- */
+
+function readDataUrl(blob){
+  return new Promise(function(res, rej){
+    var fr = new FileReader();
+    fr.onload = function(){ res(fr.result); };
+    fr.onerror = function(){ rej(new Error('读文件失败')); };
+    fr.readAsDataURL(blob);
+  });
+}
+function toI16(f){
+  var o = new Int16Array(f.length);
+  for (var i = 0; i < f.length; i++) {
+    var v = f[i];
+    if (v > 1) { v = 1; } else if (v < -1) { v = -1; }
+    o[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+  }
+  return o;
+}
+function yieldUI(){ return new Promise(function(r){ setTimeout(r, 0); }); }
+function decodeAudioFile(file){
+  return file.arrayBuffer().then(function(ab){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { throw new Error('这个浏览器不支持 Web Audio，不能解码压缩'); }
+    var ac = new AC();
+    return ac.decodeAudioData(ab).then(function(a){
+      try { ac.close(); } catch(e){}
+      return a;
+    }, function(err){
+      try { ac.close(); } catch(e){}
+      throw err;
+    });
+  });
+}
+async function resampleAudio(audio, ch, target){
+  if (!target || target >= audio.sampleRate) { return audio; }
+  var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!OC) { return audio; }
+  var frames = Math.max(1, Math.ceil(audio.duration * target));
+  var oc = new OC(ch, frames, target);
+  var src = oc.createBufferSource();
+  src.buffer = audio;
+  src.connect(oc.destination);
+  src.start();
+  return await oc.startRendering();
+}
+async function encodeMp3(audio, ch, kbps, onProg){
+  var L = toI16(audio.getChannelData(0));
+  var R = ch > 1 ? toI16(audio.getChannelData(1)) : null;
+  var enc = new lamejs.Mp3Encoder(ch, audio.sampleRate, kbps);
+  var parts = [], BLK = 1152, total = L.length;
+  for (var i = 0; i < total; i += BLK) {
+    var l = L.subarray(i, Math.min(i + BLK, total));
+    var b = (ch > 1)
+      ? enc.encodeBuffer(l, R.subarray(i, Math.min(i + BLK, total)))
+      : enc.encodeBuffer(l);
+    if (b && b.length) { parts.push(new Int8Array(b)); }
+    if (((i / BLK) % 120) === 0) { if (onProg) { onProg(i / total); } await yieldUI(); }
+  }
+  var tail = enc.flush();
+  if (tail && tail.length) { parts.push(new Int8Array(tail)); }
+  if (onProg) { onProg(1); }
+  return new Blob(parts, { type: 'audio/mpeg' });
+}
+
+function setDropText(html){ var el = document.getElementById('dropTxt'); if (el) { el.innerHTML = html; } }
+function setStat(txt){ var el = document.getElementById('stat'); if (el) { el.textContent = txt || ''; } }
+function setBusy(on){
+  var d = document.getElementById('drop');
+  if (d) { d.className = on ? 'drop busy' : 'drop'; }
+  var ids = ['cmpOn', 'kbps', 'ch', 'rate'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) { el.disabled = !!on; }
+  }
+}
+function shortName(n){ n = String(n); return n.length > 34 ? (n.slice(0, 32) + '…') : n; }
+function resetStat(){
+  var n = library.length;
+  setDropText(n
+    ? ('<strong>库里已有 ' + n + ' 首</strong>，继续往里拖即可<br><span class="hint">同一首歌分给多个键只内嵌一次</span>')
+    : ('<strong>点这里选歌</strong>，或把多个文件直接拖进这个框<br><span class="hint">可一次拖一堆；按设置自动压缩</span>'));
+  setStat('');
+}
+
+async function addBatch(files){
+  if (busy) { showErr('上一批还在处理，等它跑完再拖。'); return; }
+  var list = [];
+  for (var i = 0; i < files.length; i++) { list.push(files[i]); }
+  if (!list.length) { return; }
+  busy = true;
+  setBusy(true);
+  var t0 = Date.now();
+  var okN = 0;
+  for (var j = 0; j < list.length; j++) {
+    var done = await addOne(list[j], j, list.length);
+    if (done) { okN++; }
+  }
+  activeBase = '';
+  busy = false;
+  setBusy(false);
+  renderAll();
+  updateSize();
+  resetStat();
+  var failN = list.length - okN;
+  setStat('已加入 ' + okN + ' 首' + (failN ? ('，失败 ' + failN + ' 首') : '')
+    + '　用时 ' + ((Date.now() - t0) / 1000).toFixed(1) + ' 秒');
+}
+async function addOne(file, idx, total){
+  var e = extOf(file.name);
+  if (WARN_EXT.indexOf(e) >= 0) {
+    showErr('「' + file.name + '」是 .' + e + ' 格式。部分国产浏览器不支持这种音频，可能出现某个键按了没声。建议先转成 mp3。');
+  } else if (OK_EXT.indexOf(e) < 0) {
+    showErr('「' + file.name + '」的格式（.' + e + '）不一定所有浏览器都认。建议用 mp3。');
+  }
+  var tag = '（' + (idx + 1) + '/' + total + '）';
+  try {
+    var origBytes = file.size;
+    var dataUrl = null, finalBytes = origBytes, note = '未压缩', kbps = 0, chn = 0;
+    var wantCmp = document.getElementById('cmpOn').checked;
+    if (wantCmp) {
+      var kbpsWant = parseInt(document.getElementById('kbps').value, 10);
+      var chWant = parseInt(document.getElementById('ch').value, 10);
+      var rateWant = parseInt(document.getElementById('rate').value, 10);
+      activeBase = '解码中 ' + tag + ' ' + shortName(file.name);
+      setStat(activeBase);
+      var audio = await decodeAudioFile(file);
+      var ch = Math.min(chWant, audio.numberOfChannels);
+      audio = await resampleAudio(audio, ch, rateWant);
+      var dur = audio.duration;
+      var targetBytes = kbpsWant * 1000 / 8 * dur;
+      if (origBytes <= targetBytes * 1.25) {
+        note = '已够小，跳过压缩';
+        dataUrl = fixDataUrl(await readDataUrl(file), e);
+      } else {
+        activeBase = '压缩中 ' + tag + ' ' + shortName(file.name);
+        setStat(activeBase + ' 0%');
+        var blob = await encodeMp3(audio, ch, kbpsWant, function(p){
+          setStat(activeBase + ' ' + Math.round(p * 100) + '%');
+        });
+        dataUrl = await readDataUrl(blob);
+        finalBytes = blob.size;
+        kbps = kbpsWant; chn = ch;
+        note = kbpsWant + 'kbps · ' + (ch === 1 ? '单声道' : '立体声') + ' · ' + audio.sampleRate + 'Hz';
+      }
+    } else {
+      activeBase = '读取中 ' + tag + ' ' + shortName(file.name);
+      setStat(activeBase);
+      dataUrl = fixDataUrl(await readDataUrl(file), e);
+    }
+    var item = {
+      id: nextId++,
+      name: stripExt(file.name).slice(0, 24),
+      dataUrl: dataUrl,
+      bytes: finalBytes,
+      orig: origBytes,
+      note: note
+    };
+    library.push(item);
+    var slot = firstEmpty();
+    if (slot) {
+      assign[slot.g][slot.i] = item.id;
+      var lbl = document.querySelector('.lbl[data-g="' + slot.g + '"][data-i="' + slot.i + '"]');
+      if (lbl && !lbl.value) { lbl.value = item.name.slice(0, 12); }
+    }
+    renderLib();
+    return true;
+  } catch (err) {
+    showErr('「' + file.name + '」处理失败：' + ((err && err.message) ? err.message : err));
+    return false;
+  }
+}
+function removeSong(id){
+  for (var k = 0; k < library.length; k++) {
+    if (library[k].id === id) { library.splice(k, 1); break; }
+  }
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { if (assign[GROUPS[g]][i] === id) { assign[GROUPS[g]][i] = -1; } }
+  }
+  if (previewId === id && previewAudio) { try { previewAudio.pause(); } catch(e){} previewAudio = null; previewId = -1; }
+  renderAll(); updateSize();
+}
+function previewSong(id){
+  var it = byId(id);
+  if (!it) { return; }
+  previewSeq++;
+  if (previewAudio) { try { previewAudio.pause(); } catch(e){} previewAudio = null; }
+  if (previewId === id) { previewId = -1; return; }
+  var my = previewSeq;
+  var el = new Audio(it.dataUrl);
+  previewAudio = el;
+  previewId = id;
+  var p = el.play();
+  el.addEventListener('ended', function(){ if (previewAudio === el) { previewId = -1; } });
+  if (p && typeof p.then === 'function') {
+    p.catch(function(err){
+      if (my !== previewSeq) { return; }
+      previewId = -1;
+      previewAudio = null;
+      showErr('试听失败：' + ((err && err.name) ? err.name + ' — ' : '') + ((err && err.message) ? err.message : err));
+    });
+  }
+}
+
+/* ---------- 渲染 ---------- */
+
+function renderLib(){
+  var host = $('lib');
+  if (!library.length) {
+    host.innerHTML = '<p class="hint" style="margin:0">歌曲库是空的。点上面的按钮加歌。</p>';
+    $('libSum').textContent = '';
+    return;
+  }
+  var html = '';
+  var total = 0, totalOrig = 0;
+  for (var k = 0; k < library.length; k++) {
+    var it = library[k];
+    total += it.bytes;
+    var orig = (it.orig === undefined) ? it.bytes : it.orig;
+    totalOrig += orig;
+    var u = usageOf(it.id);
+    var ratio = orig / it.bytes;
+    html += '<div class="lrow">'
+      + '<span class="lname">' + esc(it.name) + '</span>'
+      + '<span class="lmeta">'
+      + (ratio > 1.05
+          ? ('<span class="lratio">' + mb(orig) + ' → ' + mb(it.bytes) + '　' + ratio.toFixed(1) + ':1</span>')
+          : mb(it.bytes))
+      + (it.note ? ('<br>' + esc(it.note)) : '')
+      + '</span>'
+      + '<span class="luse' + (u ? '' : ' none') + '">' + (u ? ('用了 ' + u + ' 次') : '未分配') + '</span>'
+      + '<button type="button" class="mini play" data-id="' + it.id + '">试听</button>'
+      + '<button type="button" class="mini del" data-id="' + it.id + '">删除</button>'
+      + '</div>';
+  }
+  host.innerHTML = html;
+  $('libSum').textContent = '共 ' + library.length + ' 首：原始合计 ' + mb(totalOrig)
+    + ' → 内嵌合计约 ' + mb(total)
+    + (totalOrig > total * 1.02 ? '（省 ' + (100 - total / totalOrig * 100).toFixed(0) + '%）' : '');
+}
+function optionsHtml(g, i){
+  var cur = assign[g][i];
+  var h = '<option value="-1">（空 · 不可按）</option>';
+  for (var k = 0; k < library.length; k++) {
+    var it = library[k];
+    h += '<option value="' + it.id + '"' + (it.id === cur ? ' selected' : '') + '>' + esc(it.name) + '</option>';
+  }
+  return h;
+}
+function renderSlots(){
+  for (var g = 0; g < 2; g++) {
+    var grp = GROUPS[g];
+    var html = '';
+    for (var i = 0; i < 6; i++) {
+      var id = assign[grp][i];
+      var it = byId(id);
+      html += '<div class="row">'
+        + '<div class="num">' + (i + 1) + '</div>'
+        + '<select class="sel" data-g="' + grp + '" data-i="' + i + '">' + optionsHtml(grp, i) + '</select>'
+        + '<input class="lbl" data-g="' + grp + '" data-i="' + i + '" placeholder="按键名字" maxlength="12" value="' + esc(window.__labels && window.__labels[grp + i] ? window.__labels[grp + i] : '') + '">'
+        + '<div class="sz" data-g="' + grp + '" data-i="' + i + '">' + (it ? mb(it.bytes) : '—') + '</div>'
+        + '</div>';
+    }
+    $(grp === 'blue' ? 'slotsBlue' : 'slotsPink').innerHTML = html;
+  }
+  window.__syncLabels();
+}
+function renderAll(){
+  renderLib();
+  renderSlots();
+}
+
+/* ---------- 数据与体积 ---------- */
+
+function slotsOf(g, empty, defs){
+  var out = [];
+  for (var i = 0; i < 6; i++) {
+    var lbl = document.querySelector('.lbl[data-g="' + g + '"][data-i="' + i + '"]');
+    var label = lbl ? lbl.value : '';
+    if (!label) { label = defs ? defs[i] : ('键' + (i + 1)); }
+    var sid = -1;
+    if (!empty) { sid = bankIndex(assign[g][i]); }
+    out.push({ label: label, s: sid });
+  }
+  return out;
+}
+function collect(mode, empty, defs){
+  var bank = [];
+  if (!empty) {
+    for (var k = 0; k < library.length; k++) { bank.push(library[k].dataUrl); }
+  }
+  return {
+    ver: APP_VER,
+    title: ($('fname').value || '重生短剧按键挂件'),
+    brand: $('brand').value,
+    sub: $('sub').value,
+    chips: [$('chip1').value, $('chip2').value, $('chip3').value],
+    tip: $('tip').value,
+    mode: mode,
+    bank: bank,
+    sets: [
+      { key: 'blue', name: NAME.blue, theme: THEME.blue,
+        img: empty ? '' : (customImg.blue || IMG.blue), ar: customAr.blue || AR.blue,
+        hot: { d: align.blue.d, x: align.blue.x, y: align.blue.y },
+        slots: slotsOf('blue', empty, defs ? defs.blue : null) },
+      { key: 'pink', name: NAME.pink, theme: THEME.pink,
+        img: empty ? '' : (customImg.pink || IMG.pink), ar: customAr.pink || AR.pink,
+        hot: { d: align.pink.d, x: align.pink.x, y: align.pink.y },
+        slots: slotsOf('pink', empty, defs ? defs.pink : null) }
+    ]
+  };
+}
+function assignedCount(){
+  var n = 0;
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { if (bankIndex(assign[GROUPS[g]][i]) >= 0) { n++; } }
+  }
+  return n;
+}
+function bankChars(){
+  var t = 0;
+  for (var k = 0; k < library.length; k++) { t += library[k].dataUrl.length; }
+  return t;
+}
+function imgChars(){
+  /* 体积基准 baseBytes 里图片是空的，所以这里要把两张实际用到的图（自定义或默认）加回来 */
+  return (customImg.blue || IMG.blue).length + (customImg.pink || IMG.pink).length;
+}
+function updateSize(){
+  var n = assignedCount();
+  var est = baseBytes + bankChars() + imgChars();
+  var info = $('sizeInfo');
+  var dupes = 0;
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { if (usageOf(assign[GROUPS[g]][i]) > 1) { dupes++; } }
+  }
+  if (!library.length) {
+    info.textContent = '还没放歌曲。挂件图底子约 ' + mb(baseBytes + imgChars()) + '。';
+  } else {
+    info.textContent = '库 ' + library.length + ' 首 · 已分配 ' + n + ' / 12 个键'
+      + (dupes ? '（其中 ' + dupes + ' 个键在复用，重复的音频没有重复内嵌）' : '')
+      + ' · 成品预计 <b class="' + (est > MAX_MB * 1048576 ? 'bad' : '') + '">' + mb(est) + '</b>'
+      + ' · 还剩 ' + mb(Math.max(0, MAX_MB * 1048576 - est));
+  }
+  var pct = Math.min(100, est / (MAX_MB * 1048576) * 100);
+  $('barIn').style.width = pct.toFixed(1) + '%';
+  $('bar').className = est > MAX_MB * 1048576 ? 'bar over' : 'bar';
+  var w = $('sizeWarn'), ok = $('sizeOk');
+  if (est > MAX_MB * 1048576) {
+    var per = Math.max(0.05, (MAX_MB * 1048576 - baseBytes - imgChars()) / Math.max(1, library.length) / 1048576);
+    w.style.display = 'block'; ok.style.display = 'none';
+    w.textContent = '超限：成品预计 ' + mb(est) + '，超过 ' + MAX_MB + 'MB 红线。手机浏览器打开这么大的单文件很可能卡死或打不开。'
+      + '按当前 ' + library.length + ' 首歌算，单首平均不能超过约 ' + per.toFixed(2) + 'MB。请先用你自己的工具压缩或裁短。';
+  } else if (library.length) {
+    w.style.display = 'none'; ok.style.display = 'block';
+    ok.textContent = '在 ' + MAX_MB + 'MB 红线内（用了 ' + pct.toFixed(0) + '%）。';
+  } else {
+    w.style.display = 'none'; ok.style.display = 'none';
+  }
+}
+
+/* ---------- 生成 ---------- */
+
+function download(html, name){
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  try { a.click(); } catch(e){}
+  setTimeout(function(){ try { document.body.removeChild(a); } catch(e){} }, 1500);
+  return url;
+}
+function showOut(msg, url, name){
+  var box = $('outInfo');
+  box.innerHTML = '';
+  box.appendChild(document.createTextNode(msg));
+  if (url) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.style.display = 'inline-block';
+    a.style.marginTop = '4px';
+    a.textContent = '没弹出下载？点这里手动保存';
+    box.appendChild(document.createElement('br'));
+    box.appendChild(a);
+  }
+}
+function generate(mode){
+  try {
+    var data;
+    if (mode === 'synth') {
+      data = collect('synth', true, {
+        blue: ['心跳', '鼓点', '仙气', '悬疑', '唢呐', '叮咚'],
+        pink: ['甜妹', '跺脚', '委屈', '撒糖', '闪回', '暴击']
+      });
+      data.title = (data.title || '重生短剧按键挂件') + ' 试玩版';
+    } else {
+      if (assignedCount() === 0) { showOut('还没有任何按键分配到歌曲。先在歌曲库里加歌。'); return; }
+      data = collect('audio', false, null);
+    }
+    var html = buildHtml(data);
+    var bytes = blobSize(html);
+    if (mode === 'audio' && bytes > MAX_MB * 1048576) {
+      if (!confirm('成品约 ' + mb(bytes) + '，超过 ' + MAX_MB + 'MB 红线。\n手机很可能打不开或卡死。\n仍要生成吗？')) { return; }
+    }
+    var stem = ($('fname').value || '重生短剧按键挂件').replace(/[\\\/:*?"<>|]/g, '_');
+    var name = stem + (mode === 'synth' ? '_试玩版' : '') + '.html';
+    var url = download(html, name);
+    showOut('已生成 ' + name + '（' + mb(bytes) + '），内嵌 ' + data.bank.length + ' 首歌。打包器 ' + APP_VER + '。'
+      + (mode === 'synth' ? '试玩版没有真实歌曲：6 个键是浏览器现场合成的音，只用来看样子和手感。' : ''), url, name);
+  } catch(err) {
+    showErr('生成失败：' + ((err && err.message) ? err.message : err));
+  }
+}
+
+/* ---------- 绑定 ---------- */
+
+window.__labels = {};
+window.__syncLabels = function(){
+  var out = {};
+  var ls = document.getElementsByClassName('lbl');
+  for (var k = 0; k < ls.length; k++) {
+    var g = ls[k].getAttribute('data-g');
+    var i = ls[k].getAttribute('data-i');
+    if (g && i !== null && ls[k].value) { out[g + i] = ls[k].value; }
+  }
+  window.__labels = out;
+};
+
+refreshPreviews();
+$('fixedInfo').textContent = BUILD_INFO;
+baseBytes = blobSize(buildHtml(collect('audio', true, null)));
+bindEditor();
+renderEditor();
+
+$('addSongs').addEventListener('change', function(ev){
+  var files = ev.target.files;
+  if (files && files.length) { addBatch(files); }
+  ev.target.value = '';
+});
+(function bindDrop(){
+  var dropEl = $('drop');
+  ['dragenter', 'dragover'].forEach(function(t){
+    dropEl.addEventListener(t, function(e){ e.preventDefault(); e.stopPropagation(); dropEl.className = 'drop hot'; });
+  });
+  ['dragleave', 'dragend'].forEach(function(t){
+    dropEl.addEventListener(t, function(e){ e.preventDefault(); dropEl.className = 'drop'; });
+  });
+  dropEl.addEventListener('drop', function(e){
+    e.preventDefault(); e.stopPropagation();
+    dropEl.className = 'drop';
+    var dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length) { addBatch(dt.files); }
+  });
+  window.addEventListener('dragover', function(e){ e.preventDefault(); });
+  window.addEventListener('drop', function(e){ e.preventDefault(); });
+})();
+$('lib').addEventListener('click', function(ev){
+  var t = ev.target;
+  var id = t && t.getAttribute('data-id');
+  if (id === null || id === undefined) { return; }
+  var n = parseInt(id, 10);
+  if (t.className.indexOf('play') >= 0) { previewSong(n); }
+  else if (t.className.indexOf('del') >= 0) { removeSong(n); }
+});
+function bindSlots(hostId){
+  var host = $(hostId);
+  host.addEventListener('change', function(ev){
+    var t = ev.target;
+    if (!t) { return; }
+    var g = t.getAttribute('data-g'), i = t.getAttribute('data-i');
+    if (g === null || i === null) { return; }
+    var idx = parseInt(i, 10);
+    if (t.className.indexOf('sel') >= 0) {
+      assign[g][idx] = parseInt(t.value, 10);
+      var it = byId(assign[g][idx]);
+      var lbl = document.querySelector('.lbl[data-g="' + g + '"][data-i="' + idx + '"]');
+      if (lbl && !lbl.value && it) { lbl.value = it.name.slice(0, 12); }
+      window.__syncLabels();
+      renderAll();
+      updateSize();
+    } else if (t.className.indexOf('lbl') >= 0) {
+      window.__syncLabels();
+    }
+  });
+}
+bindSlots('slotsBlue');
+bindSlots('slotsPink');
+
+$('copyBP').onclick = function(){
+  for (var i = 0; i < 6; i++) { assign.pink[i] = assign.blue[i]; }
+  var ls = document.querySelectorAll('.lbl[data-g="blue"]');
+  for (var k = 0; k < ls.length; k++) {
+    var pl = document.querySelector('.lbl[data-g="pink"][data-i="' + k + '"]');
+    if (pl) { pl.value = ls[k].value; }
+  }
+  window.__syncLabels();
+  renderAll(); updateSize();
+};
+$('clearAll').onclick = function(){
+  for (var g = 0; g < 2; g++) {
+    for (var i = 0; i < 6; i++) { assign[GROUPS[g]][i] = -1; }
+  }
+  renderAll(); updateSize();
+};
+$('capTxt').textContent = String(MAX_MB);
+$('mkReal').onclick = function(){ generate('audio'); };
+$('mkSynth').onclick = function(){ generate('synth'); };
+
+renderAll();
+updateSize();
+resetStat();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;min-height:100%}
+/* --u 是唯一的尺度单位：
+   触摸设备 = 1vw（整个界面按视口宽度等比缩放，不管浏览器报的视口是多少）
+   鼠标设备 = 固定 5.2px（桌面上保持合理大小，不会因为窗口宽就变巨）
+   这样即使浏览器忽略 viewport 声明、按 980px 桌面宽度渲染，界面对屏幕仍然是对的。 */
+:root{--u:1vw}
+@media (hover:hover) and (pointer:fine){:root{--u:5.2px}}
+body{
+--b1:#8FC2EE;--b2:#4E8FD6;--wave:#7FB6EA;
+--page:#000000;--ink:#EAF1FF;--ink2:#93A7CC;
+--chrome:rgba(255,255,255,.07);--chromebd:rgba(255,255,255,.15);
+font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+background:var(--page);
+color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:calc(var(--u) * 2.4);user-select:none;-webkit-user-select:none;overflow-x:hidden}
+body.pink{--b1:#FBC2DA;--b2:#EE7FAF;--wave:#F4A8CB;--ink:#FFEAF5;--ink2:#D9A0BC}
+/* min-width:0 是关键：flex item 默认 min-width:auto，会被里面 <img> 的固有宽度顶开，
+   导致整个 stage 比视口还宽、被居中后左右裁掉。 */
+/* ---- 毛玻璃氛围底 ----
+   三层：① body 底色 = 图片平均色（JS 用 canvas 取，真·自动提取）
+        ② .bg i = 同一张图放大 124% + 重模糊 + 压暗（色彩分布自动跟着图走）
+        ③ .bg::after = 暗色渐变遮罩，保证文字对比度                        */
+.bg{position:fixed;left:0;top:0;width:100%;height:100%;z-index:0;overflow:hidden;pointer-events:none;background:var(--page)}
+.bg i{position:absolute;left:-12%;top:-12%;width:124%;height:124%;display:block;
+background-size:cover;background-position:center;background-repeat:no-repeat;
+filter:blur(54px) saturate(1.75) brightness(.80);transform:translateZ(0)}
+/* 顶部刻意压暗：主标是亮色渐变字 + 白描边，浅色图上会糊，这层保证对比度 */
+.bg::after{content:'';position:absolute;left:0;top:0;right:0;bottom:0;
+background:linear-gradient(180deg,rgba(0,0,0,.44) 0%,rgba(0,0,0,.16) 40%,rgba(0,0,0,.34) 100%)}
+.stage{position:relative;z-index:1;width:min(94vw, calc(var(--u) * 92));max-width:100%;min-width:0;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 1.9)}
+.hd{display:flex;flex-direction:column;gap:calc(var(--u) * 0.5);text-align:center;width:100%}
+.brand{position:relative;margin:0;font-size:calc(var(--u) * 5.2);font-weight:900;line-height:1.1;letter-spacing:.02em;color:#A8CBFF;
+filter:drop-shadow(0 calc(var(--u) * 0.4) 0 rgba(0,0,0,.65)) drop-shadow(0 0 calc(var(--u) * 2.6) rgba(120,170,255,.45))}
+.brand::before{content:attr(data-t);position:absolute;left:0;right:0;top:0;z-index:0;color:#FFFFFF;-webkit-text-stroke:calc(var(--u) * 0.7) #FFFFFF}
+.brand span{position:relative;z-index:1}
+body.pink .brand{color:#FFB8D8;filter:drop-shadow(0 calc(var(--u) * 0.4) 0 rgba(0,0,0,.65)) drop-shadow(0 0 calc(var(--u) * 2.6) rgba(255,140,200,.45))}
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+.brand span{background-image:linear-gradient(180deg,#BBD8FF,#6E9BFF 52%,#B79BFF);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+body.pink .brand span{background-image:linear-gradient(180deg,#FFD3E6,#FF7FB4 52%,#C79BFF)}
+}
+.sub{margin:0;font-size:calc(var(--u) * 2.9);font-weight:700;color:var(--ink2)}
+.pendant{position:relative;width:100%;min-width:0;max-width:100%}
+.pendant::before{content:'';display:block;padding-bottom:calc(100% / var(--ar))}
+/* 图片保持原样（水彩背景留着），黑底上是一张完整的水彩图 */
+.photo{position:absolute;left:0;top:0;width:100%;height:100%;max-width:100%;object-fit:contain;display:block}
+.pads{position:absolute;left:0;top:0;width:100%;height:100%}
+.pad{position:absolute;left:var(--x);top:var(--y);width:var(--d);height:0;padding:0 0 var(--d) 0;border:0;background:none;
+border-radius:50%;transform:translate(-50%,-50%);cursor:pointer}
+.pad i{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:50%;display:block;transition:opacity .15s;
+background:radial-gradient(circle at 50% 46%,rgba(255,255,255,.98) 0 30%,rgba(255,255,255,.62) 48%,rgba(255,255,255,0) 76%);
+opacity:0}
+.pad.on i{opacity:1}
+.pad:active i{opacity:.55}
+.pad.empty{opacity:.35}
+.pad:disabled{cursor:default}
+.now{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 1.4);min-height:calc(var(--u) * 4.4);margin:0;opacity:0;transition:opacity .2s;
+font-size:calc(var(--u) * 2.9);font-weight:800;color:var(--ink2)}
+.now.on{opacity:1}
+.bars{display:none;align-items:flex-end;gap:calc(var(--u) * 0.6);height:calc(var(--u) * 3.5)}
+.now.live .bars{display:flex}
+.bars i{display:block;width:calc(var(--u) * 0.7);border-radius:2px;background:var(--wave);box-shadow:0 0 calc(var(--u) * 1.2) var(--wave)}
+.bars i:nth-child(1){height:calc(var(--u) * 1.7)}
+.bars i:nth-child(2){height:calc(var(--u) * 3.5)}
+.bars i:nth-child(3){height:calc(var(--u) * 2.4)}
+.chips{display:flex;gap:calc(var(--u) * 1.4);flex-wrap:wrap;justify-content:center}
+.chip{font-size:calc(var(--u) * 2.6);font-weight:700;color:var(--ink);background:rgba(255,255,255,.13);
+border:calc(var(--u) * 0.3) solid rgba(255,255,255,.22);border-radius:999px;padding:calc(var(--u) * 0.7) calc(var(--u) * 2.4);
+-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.skus{display:flex;gap:calc(var(--u) * 1.8)}
+.sku{font-family:inherit;font-size:calc(var(--u) * 3.2);font-weight:800;color:var(--ink);background:rgba(255,255,255,.13);
+border:calc(var(--u) * 0.4) solid rgba(255,255,255,.22);border-radius:999px;padding:calc(var(--u) * 1.3) calc(var(--u) * 3.6);cursor:pointer;
+-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+transition:background .14s,color .14s,border-color .14s}
+.sku.on{color:#fff;background:linear-gradient(160deg,var(--b1),var(--b2));border-color:transparent;
+box-shadow:0 0 calc(var(--u) * 2.6) rgba(140,180,255,.35)}
+.tip{margin:0;font-size:calc(var(--u) * 2.6);color:var(--ink2);opacity:.75;text-align:center;line-height:1.5}
+#err{display:none;position:fixed;left:calc(var(--u) * 1.6);right:calc(var(--u) * 1.6);bottom:calc(var(--u) * 1.6);z-index:99;
+background:#3A0E1C;border:1px solid #FF6B8A;border-radius:calc(var(--u) * 2);padding:calc(var(--u) * 2) calc(var(--u) * 2.4);
+font-size:calc(var(--u) * 2.7);color:#FFD9E2}
+#errTxt{white-space:pre-wrap;word-break:break-all;max-height:30vh;overflow:auto;user-select:text;-webkit-user-select:text}
+#err button{margin-top:calc(var(--u) * 1.6);background:#FF6B8A;border:0;color:#2A0512;font-weight:700;border-radius:calc(var(--u) * 1.4);
+padding:calc(var(--u) * 1.2) calc(var(--u) * 2.4);font-size:calc(var(--u) * 2.4);font-family:inherit}
